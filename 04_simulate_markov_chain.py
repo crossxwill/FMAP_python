@@ -4,7 +4,7 @@ from itertools import product
 from tqdm import tqdm
 from fmap_helpers import (
     calculate_mtmltv,
-    get_transition_probabilities,
+    get_transition_probabilities, # Import the new function
     calculate_credit_loss,
     get_transition_matrix,
     LoanState,
@@ -40,17 +40,13 @@ for (loan_idx, loan), scenario_id in tqdm(product(loans_df.iterrows(), scenarios
             base_hpi=loan['base_hpi']
         )
 
-        # 2. Get transition probabilities and matrix
+        # 2. Get transition probabilities and the full matrix
         probabilities = get_transition_probabilities(loan, mev, current_mtmltv)
         transition_matrix = get_transition_matrix(probabilities)
 
         # 3. Calculate probability of entering the default state this month
-        prob_entering_default = 0
-        for state in LoanState:
-            if state not in [LoanState.DEFAULT, LoanState.PREPAY]: # Non-terminal states
-                prob_in_state_t_minus_1 = state_vector[STATE_TO_INDEX[state]]
-                prob_state_to_default = transition_matrix.loc[state, LoanState.DEFAULT]
-                prob_entering_default += prob_in_state_t_minus_1 * prob_state_to_default
+        # This is the dot product of the current state vector and the default column of the transition matrix.
+        prob_entering_default = state_vector.dot(transition_matrix[LoanState.DEFAULT].values)
 
         # 4. Calculate potential credit loss
         potential_loss = calculate_credit_loss(loan, current_mtmltv)

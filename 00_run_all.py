@@ -23,7 +23,6 @@ def run_script(script_name):
         )
         print(process.stdout)
         if process.stderr:
-            print("Error output:")
             print(process.stderr)
         print(f"--- Finished {script_name} successfully ---\n")
         return True

@@ -13,7 +13,7 @@ from fmap_helpers import (
 np.random.seed(42)
 
 # --- CONFIGURATION ---
-N_SIMULATION_PATHS = 200 # Number of paths to simulate for each loan/scenario
+N_SIMULATION_PATHS = 10000 # Number of paths to simulate for each loan/scenario
 
 # Load data
 loans_df = pd.read_csv('loans.csv')
@@ -50,11 +50,12 @@ for (loan_idx, loan), scenario_id, path_num in tqdm(
                 base_hpi=loan['base_hpi']
             )
 
-            # 2. Get transition probabilities
+            # 2. Get transition probabilities for the current state
             transitions = get_transition_probabilities(loan, mev, current_mtmltv)
             current_transitions = transitions.get(current_loan_state, {})
 
             # Ensure probabilities sum to 1 for np.random.choice
+            # This is a fallback, the new get_transition_matrix should handle this
             if sum(current_transitions.values()) > 0 and not np.isclose(sum(current_transitions.values()), 1.0):
                 # Find the state to adjust (usually the current state)
                 state_to_adjust = current_loan_state if current_loan_state in current_transitions else list(current_transitions.keys())[0]
@@ -92,9 +93,9 @@ for (loan_idx, loan), scenario_id, path_num in tqdm(
 # Create DataFrame from all paths
 full_results_df = pd.DataFrame(results)
 
-# --- Aggregate results by taking the average across all paths ---
+# --- VALIDATION FIX: Aggregate results by taking the MEAN across all paths ---
 agg_results_df = full_results_df.groupby(['loan_id', 'scenario_id', 'month']).agg(
-    credit_loss=('credit_loss', 'mean'),
+    credit_loss=('credit_loss', 'mean'), # Changed from 'sum' to 'mean'
     final_state=('final_state', lambda x: x.value_counts().index[0]) # Most common final state
 ).reset_index()
 

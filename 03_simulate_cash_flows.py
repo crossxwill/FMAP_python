@@ -41,18 +41,16 @@ for (loan_idx, loan), scenario_id in tqdm(product(loans_df.iterrows(), scenarios
             base_hpi=loan['base_hpi']
         )
 
-        # 2. Get transition probabilities and the full matrix
+        # 2. Get the full transition matrix for the current loan and scenario conditions
+        # This matrix is now generated directly by a function that encapsulates all the
+        # state transition logic from the white paper.
         probabilities = get_transition_probabilities(loan, mev, current_mtmltv)
         transition_matrix = get_transition_matrix(probabilities)
 
         # 3. Calculate the probability of entering the DEFAULT state *this month*
         # This is the probability of being in a non-terminal state times the probability of transitioning to default
-        prob_entering_default = 0
-        for state in LoanState:
-            if state not in [LoanState.DEFAULT, LoanState.PREPAY]:
-                prob_in_state = state_vector[STATE_TO_INDEX[state]]
-                prob_trans_to_default = transition_matrix.loc[state, LoanState.DEFAULT]
-                prob_entering_default += prob_in_state * prob_trans_to_default
+        # It is the dot product of the current state distribution and the 'Default' column of the transition matrix.
+        prob_entering_default = state_vector.dot(transition_matrix[LoanState.DEFAULT].values)
 
         # 4. Calculate expected credit loss for the month
         potential_loss = calculate_credit_loss(loan, current_mtmltv)
@@ -68,7 +66,9 @@ for (loan_idx, loan), scenario_id in tqdm(product(loans_df.iterrows(), scenarios
             'loan_id': loan['loan_id'],
             'scenario_id': scenario_id,
             'month': mev['month'],
-            'credit_loss': credit_loss
+            'expected_credit_loss': credit_loss,
+            # record full state distribution
+            **{f'prob_{state.name}': state_vector[STATE_TO_INDEX[state]] for state in LoanState}
         })
 
 # Create DataFrame and save

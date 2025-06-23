@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,7 +13,7 @@ except FileNotFoundError as e:
 
 # 2. Aggregate Losses
 # Group by scenario and sum the relevant loss column
-cashflow_agg = cashflow_df.groupby('scenario_id')['credit_loss'].sum()
+cashflow_agg = cashflow_df.groupby('scenario_id')['expected_credit_loss'].sum()
 markov_agg = markov_df.groupby('scenario_id')['expected_credit_loss'].sum()
 monte_carlo_agg = monte_carlo_df.groupby('scenario_id')['credit_loss'].sum()
 
